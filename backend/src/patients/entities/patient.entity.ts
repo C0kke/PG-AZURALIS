@@ -49,7 +49,7 @@ export class Patient {
     length: 50,
     nullable: true,
   })
-  selectedColor?: CancerType; // Color personalizado elegido por el paciente
+  selectedColor?: string; // Color personalizado elegido por el paciente
 
   @Column('text', { nullable: true, default: '[]' })
   allergies: string; // JSON string de string[]

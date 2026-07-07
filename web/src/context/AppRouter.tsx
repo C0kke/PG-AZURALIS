@@ -8,6 +8,7 @@ import { RegisterScreen } from "../pages/RegisterScreen";
 import { EmergencyAccess } from "../pages/EmergencyAccess";
 import { ForgotPasswordScreen } from "../pages/ForgotPasswordScreen";
 import { ResetPasswordScreen } from "../pages/ResetPasswordScreen";
+import { GoogleCallback } from "../pages/GoogleCallback";
 
 export function AppRouter() {
     return (
@@ -22,6 +23,9 @@ export function AppRouter() {
                 {/* Ruta pública - Recuperación de contraseña */}
                 <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
                 <Route path="/reset-password" element={<ResetPasswordScreen />} />
+
+                {/* Ruta pública - Callback de Google OAuth */}
+                <Route path="/auth/callback" element={<GoogleCallback />} />
 
                 {/* Ruta pública - Acceso de emergencia vía QR (SIN AUTENTICACIÓN) */}
                 <Route path="/emergency/:qrCode" element={<EmergencyAccess />} />

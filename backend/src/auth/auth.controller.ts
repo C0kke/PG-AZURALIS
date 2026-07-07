@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
@@ -48,6 +49,27 @@ export class AuthController {
   ) {
     await this.authService.resetPassword(token, newPassword);
     return { message: 'Contraseña actualizada correctamente' };
+  }
+
+  // ── Google OAuth ──────────────────────────────────────────────────────────
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // Passport intercepta y redirige a Google — este cuerpo nunca se ejecuta
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: any, @Res() res: any) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    if (!req.user) {
+      return res.redirect(`${frontendUrl}/?google_error=1`);
+    }
+
+    const token = this.authService.signToken(req.user);
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   }
 
 }

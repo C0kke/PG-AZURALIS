@@ -35,6 +35,11 @@ export class PatientDocumentsController {
     return this.docsService.findAll();
   }
 
+  @Get(':id/download-url')
+  async getDownloadUrl(@Param('id') id: string) {
+    return this.docsService.generateDownloadUrl(id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.docsService.findOne(id);
@@ -48,10 +53,5 @@ export class PatientDocumentsController {
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return this.docsService.delete(id);
-  }
-
-  @Get(':id/download-url')
-  async getDownloadUrl(@Param('id') id: string) {
-    return this.docsService.generateDownloadUrl(id);
   }
 }

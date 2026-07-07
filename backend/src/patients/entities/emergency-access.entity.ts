@@ -19,7 +19,7 @@ export class EmergencyAccess {
   patient: Patient;
 
   @Column()
-  patientId: number;
+  patientId: string;
 
   @CreateDateColumn()
   accessedAt: Date;

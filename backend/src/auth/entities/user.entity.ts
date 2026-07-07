@@ -14,11 +14,14 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   password: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   rut: string;
+
+  @Column({ nullable: true })
+  googleId?: string;
 
   @Column({
     type: 'varchar',

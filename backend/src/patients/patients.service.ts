@@ -315,8 +315,8 @@ export class PatientsService {
   }
 
   async findPatientNotes(patientId: string) {
-    // Normalizar patientId a mayúsculas para búsqueda
-    const normalizedId = patientId.toUpperCase();
+    // Normalizar patientId a minúsculas para búsqueda (UUIDs se almacenan en lowercase)
+    const normalizedId = patientId.toLowerCase();
     console.log('🔍 findPatientNotes - Buscando notas para patientId:', normalizedId);
     
     // Buscar todas las notas del paciente ordenadas por fecha
@@ -330,8 +330,8 @@ export class PatientsService {
   }
 
   async findPatientDocuments(patientId: string) {
-    // Normalizar patientId a mayúsculas para búsqueda
-    const normalizedId = patientId.toUpperCase();
+    // Normalizar patientId a minúsculas para búsqueda (UUIDs se almacenan en lowercase)
+    const normalizedId = patientId.toLowerCase();
     console.log('🔍 findPatientDocuments - Buscando documentos para patientId:', normalizedId);
     
     // Buscar todos los documentos del paciente ordenados por fecha

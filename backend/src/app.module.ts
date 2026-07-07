@@ -8,7 +8,10 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env',
+    }),
 
     ThrottlerModule.forRoot([
       {

@@ -13,14 +13,14 @@ export class PatientDocumentsService {
   ) {}
 
   async create(docData: Partial<PatientDocument>, file: Express.Multer.File) {
-    // Normalizar patientId a mayúsculas si existe
+    // Normalizar patientId a minúsculas si existe (UUIDs se almacenan en lowercase)
     if (docData.patientId) {
-      docData.patientId = docData.patientId.toUpperCase();
+      docData.patientId = docData.patientId.toLowerCase();
     }
-    
+
     // Asegurar que uploadDate tenga un valor
     if (!docData.uploadDate) {
-      docData.uploadDate = new Date().toISOString();
+      docData.uploadDate = new Date();
     }
 
     // Generar nombre único para el archivo en R2

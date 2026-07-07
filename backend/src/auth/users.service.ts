@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -29,7 +29,17 @@ export class UsersService {
     // No permitir actualizar password directamente (debería haber un endpoint específico)
     delete updateData.password;
     delete updateData.email; // El email tampoco debería cambiarse así
-    delete updateData.rut; // El RUT tampoco
+
+    // El RUT solo se puede fijar una vez (p.ej. usuarios de Google que no lo tienen aún).
+    // Si el usuario ya tiene RUT, no se permite cambiarlo por esta vía.
+    if (user.rut) {
+      delete updateData.rut;
+    } else if (updateData.rut) {
+      const existingRut = await this.userRepo.findOne({ where: { rut: updateData.rut } });
+      if (existingRut) {
+        throw new ConflictException('Este RUT ya está registrado en el sistema.');
+      }
+    }
 
     Object.assign(user, updateData);
     const updated = await this.userRepo.save(user);

@@ -75,11 +75,15 @@ export class AuthService {
 
   async login(email: string, password: string) {
     this.logger.log(`Login attempt for email: ${email}`);
-    
+
     const user = await this.usersRepo.findOne({ where: { email } });
     if (!user) {
       this.logger.warn(`Login failed: User not found for email: ${email}`);
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedException('Esta cuenta usa inicio de sesión con Google. Usa el botón "Continuar con Google".');
     }
 
     const valid = await bcrypt.compare(password, user.password);
@@ -192,6 +196,40 @@ export class AuthService {
     user.passwordResetExpires = undefined;
 
     await this.usersRepo.save(user);
+  }
+
+  async validateOrCreateGoogleUser(profile: {
+    googleId: string;
+    email: string;
+    name: string;
+    photo: string | null;
+  }) {
+    // Primero buscar por googleId
+    let user = await this.usersRepo.findOne({ where: { googleId: profile.googleId } });
+    if (user) return user;
+
+    // Si el email ya existe, vincular la cuenta de Google
+    user = await this.usersRepo.findOne({ where: { email: profile.email } });
+    if (user) {
+      user.googleId = profile.googleId;
+      if (!user.photo && profile.photo) user.photo = profile.photo;
+      return this.usersRepo.save(user);
+    }
+
+    // Crear usuario nuevo
+    const newUser = this.usersRepo.create({
+      name: profile.name,
+      email: profile.email,
+      googleId: profile.googleId,
+      photo: profile.photo ?? undefined,
+      role: UserRole.PATIENT,
+    });
+    return this.usersRepo.save(newUser);
+  }
+
+  signToken(user: { id: string; email: string; role: UserRole }): string {
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return this.jwtService.sign(payload);
   }
 
 

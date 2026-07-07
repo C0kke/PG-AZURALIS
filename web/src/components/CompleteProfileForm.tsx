@@ -9,16 +9,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, FileText, Phone, User } from 'lucide-react';
 import { cancerColors, type CancerType } from '@/types/medical';
+import { validateRUT, formatRUT } from '@/common/helpers/ValidateForm';
 
 interface CompleteProfileFormProps {
   onComplete: () => void;
 }
 
 export function CompleteProfileForm({ onComplete }: CompleteProfileFormProps) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
+
+  // Los usuarios que ingresaron con Google no tienen RUT — hay que pedirlo aquí
+  const needsRut = !user?.rut;
+  const [rut, setRut] = useState('');
+  const [rutError, setRutError] = useState('');
 
   // Datos del formulario
   const [formData, setFormData] = useState({
@@ -38,25 +44,47 @@ export function CompleteProfileForm({ onComplete }: CompleteProfileFormProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleRutChange = (value: string) => {
+    setRut(formatRUT(value));
+    setRutError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
+    let patientRut = user?.rut || '';
+
+    // Si el usuario todavía no tiene RUT (login con Google), hay que fijarlo primero
+    if (needsRut) {
+      if (!validateRUT(rut)) {
+        setRutError('El RUT no es válido. Formato: 12.345.678-9');
+        return;
+      }
+      patientRut = rut;
+    }
+
+    setLoading(true);
+
     try {
+      if (needsRut) {
+        await apiService.users.update(user!.id, { rut: patientRut });
+        await refreshUser();
+      }
+
       // Preparar arrays de alergias y medicamentos
-      const allergiesArray = formData.allergies 
+      const allergiesArray = formData.allergies
         ? formData.allergies.split(',').map(a => a.trim()).filter(a => a.length > 0)
         : [];
-      
-      const medicationsArray = formData.currentMedications 
+
+      const medicationsArray = formData.currentMedications
         ? formData.currentMedications.split(',').map(m => m.trim()).filter(m => m.length > 0)
         : [];
 
       // Crear el paciente con los datos del formulario
       const patientData = {
         name: user?.name || '',
-        rut: user?.rut || '',
+        rut: patientRut,
         dateOfBirth: formData.dateOfBirth,
         diagnosis: formData.diagnosis,
         stage: formData.stage,
@@ -67,12 +95,18 @@ export function CompleteProfileForm({ onComplete }: CompleteProfileFormProps) {
       };
 
       await apiService.patients.create(patientData);
-      
+
       // Llamar onComplete para recargar los datos
       onComplete();
     } catch (err: any) {
       console.error('Error al crear perfil:', err);
-      setError(err.response?.data?.message || 'Error al guardar los datos. Por favor intenta nuevamente.');
+      const message = err.response?.data?.message;
+      if (err.response?.status === 409 || message?.includes('RUT') || message?.includes('rut')) {
+        setRutError('Este RUT ya está registrado en el sistema.');
+        setStep(1);
+      } else {
+        setError(message || 'Error al guardar los datos. Por favor intenta nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -80,6 +114,23 @@ export function CompleteProfileForm({ onComplete }: CompleteProfileFormProps) {
 
   const renderStep1 = () => (
     <div className="space-y-4">
+      {needsRut && (
+        <div>
+          <Label htmlFor="rut">RUT *</Label>
+          <Input
+            id="rut"
+            value={rut}
+            onChange={(e) => handleRutChange(e.target.value)}
+            placeholder="12.345.678-9"
+            className={rutError ? 'border-red-500' : ''}
+            required
+          />
+          {rutError && (
+            <p className="text-red-500 text-sm mt-1">{rutError}</p>
+          )}
+        </div>
+      )}
+
       <div>
         <Label htmlFor="dateOfBirth">Fecha de Nacimiento *</Label>
         <Input
@@ -140,9 +191,15 @@ export function CompleteProfileForm({ onComplete }: CompleteProfileFormProps) {
 
       <Button
         type="button"
-        onClick={() => setStep(2)}
+        onClick={() => {
+          if (needsRut && !validateRUT(rut)) {
+            setRutError('El RUT no es válido. Formato: 12.345.678-9');
+            return;
+          }
+          setStep(2);
+        }}
         className="w-full"
-        disabled={!formData.dateOfBirth || !formData.diagnosis || !formData.stage || !formData.cancerType}
+        disabled={!formData.dateOfBirth || !formData.diagnosis || !formData.stage || !formData.cancerType || (needsRut && !rut)}
       >
         Siguiente
       </Button>

@@ -27,7 +27,7 @@ export class PatientDocument {
   isComiteOncologico: boolean;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  uploadDate: string;
+  uploadDate: Date;
 
   @Column()
   patientId: string;
